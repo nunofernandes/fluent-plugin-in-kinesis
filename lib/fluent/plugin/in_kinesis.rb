@@ -19,12 +19,13 @@ require 'securerandom'
 require 'base64'
 require 'stringio'
 require 'zlib'
+require 'fluent/plugin/input'
 require 'fluent/plugin/thread_supervisor'
 require 'fluent/plugin/kinesis_shard'
 
 
 module FluentPluginKinesis
-  class InputFilter < Fluent::Input
+  class InputFilter < Fluent::Plugin::Input
     include Fluent::DetachMultiProcessMixin
     include KinesisSupervisor
     include KinesisShard
@@ -70,12 +71,10 @@ module FluentPluginKinesis
     end
     
     def start
-      detach_multi_process do
-        super
-        @stop_flag = false
-        load_client
-        Thread.new(&method(:supervisor_thread))
-      end
+      super
+      @stop_flag = false
+      load_client
+      Thread.new(&method(:supervisor_thread))
     end
     
     def shutdown
