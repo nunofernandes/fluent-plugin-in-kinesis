@@ -18,4 +18,4 @@ require 'fluent/test'
 require 'fluent/test/helpers'
 require 'fluent/test/driver/input'
 require 'fluent/process'
-require 'fluent/plugin/in_kinesis
+require 'fluent/plugin/in_kinesis'
