@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-require 'aws-sdk-core'
+require 'aws-sdk'
 require 'multi_json'
 require 'yajl'
 require 'logger'
@@ -19,7 +19,7 @@ require 'securerandom'
 require 'base64'
 require 'stringio'
 require 'zlib'
-require 'fluent/plugin/input'
+require 'fluent/input'
 require 'fluent/plugin/thread_supervisor'
 require 'fluent/plugin/kinesis_shard'
 

@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_runtime_dependency "fluentd", ">= 0.14.15", "< 2"
-  spec.add_runtime_dependency "aws-sdk", "~> 3.0"
+  spec.add_runtime_dependency "aws-sdk", "~> 3"
   spec.add_runtime_dependency "multi_json", "~> 1.0"
    
   spec.add_development_dependency "bundler"
