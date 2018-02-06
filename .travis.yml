@@ -1,10 +1,16 @@
 language: ruby
 
 rvm:
-  include:
-  - rvm: 2.4
-    os: linux
-    gemfile: Gemfile
+  - 2.4
+  - 2.3
+  - 2.2
+  - 2.1
+
+os:
+  - linux
+
+gemfile:
+  - Gemfile
 
 script: bundle exec rake
 
