@@ -12,10 +12,12 @@ class KinesisInputTest < Test::Unit::TestCase
     aws_sec_key test_sec_key
     stream_name test_stream
     region ap-northeast-1
+    state_dir_path dir/path
   ]
 
   def create_driver(conf = CONFIG)
-    Fluent::Test::Driver::Input.new(FluentPluginKinesis::InputFilter).configure(conf)
+    Fluent::Test::Driver::Input
+      .new(FluentPluginKinesis::InputFilter).configure(conf)
   end
 
   def create_mock_client
@@ -51,7 +53,7 @@ class KinesisInputTest < Test::Unit::TestCase
 
   def test_load_client
     client = stub(Object.new)
-    client.put_record { {} }
+    client.get_records { {} }
 
     stub(Aws::Kinesis::Client).new do |options|
       assert_equal("test_key_id", options[:access_key_id])
@@ -68,7 +70,7 @@ class KinesisInputTest < Test::Unit::TestCase
 
   def test_load_client_with_credentials
     client = stub(Object.new)
-    client.put_record { {} }
+    client.get_records { {} }
 
     stub(Aws::Kinesis::Client).new do |options|
       assert_equal(nil, options[:access_key_id])
