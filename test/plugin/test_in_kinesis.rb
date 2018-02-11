@@ -1,4 +1,5 @@
 require 'helper'
+require 'fluent/plugin/in_kinesis'
 
 class KinesisInputTest < Test::Unit::TestCase
   include Fluent::Test::Helpers
@@ -19,6 +20,7 @@ class KinesisInputTest < Test::Unit::TestCase
     Fluent::Test::Driver::Input
       .new(FluentPluginKinesis::InputFilter).configure(conf)
   end
+end
 
   def create_mock_client
     client = mock(Object.new)
@@ -47,7 +49,7 @@ class KinesisInputTest < Test::Unit::TestCase
     assert_equal 'default', d.instance.profile
     assert_equal '/home/foo/.aws/credentials', d.instance.credential_path
     assert_equal 'test_stream', d.instance.stream_name
-    assert_equal 'ap-northest-1', d.instance.region
+    assert_equal 'ap-northeast-1', d.instance.region
     assert_equal '/var/log/in_kinesis', d.instance.state_dir_path
   end
 
@@ -94,4 +96,3 @@ class KinesisInputTest < Test::Unit::TestCase
 
     d.run(default_tag: "test")
   end
-end

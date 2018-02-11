@@ -20,88 +20,91 @@ require 'base64'
 require 'stringio'
 require 'zlib'
 require 'fluent/plugin/input'
+require 'fluent/process'
 require 'fluent/plugin/thread_supervisor'
 require 'fluent/plugin/kinesis_shard'
 
 
-module FluentPluginKinesis
-  class InputFilter < Fluent::Plugin::Input
-    include Fluent::DetachMultiProcessMixin
-    include KinesisSupervisor
-    include KinesisShard
+module Fluent
+  module Plugin
+    class KinesisInputFilter < Fluent::Plugin::Input
+      include Fluent::DetachMultiProcessMixin
+      include KinesisSupervisor
+      include KinesisShard
 
-    USER_AGENT_NAME = 'fluent-plugin-kinesis-input-filter'
+      USER_AGENT_NAME = 'fluent-plugin-kinesis-input-filter'
 
-    Fluent::Plugin.register_input("kinesis", self)
-    
-    config_param :tag,                    :string, :default => nil
-    config_param :state_dir_path,         :string, :default => nil
-
-    config_param :aws_key_id,             :string, :default => nil, :secret => true
-    config_param :aws_sec_key,            :string, :default => nil, :secret => true
-    config_param :region,                 :string, :default => nil
-    config_param :profile,                :string, :default => nil
-    config_param :credentials_path,       :string, :default => nil
-    config_param :stream_name,            :string
-    
-    config_param :use_base64,             :bool,    :default => false,  :secret => true
-    config_param :use_gunzip,             :bool,    :default => false,  :secret => true
-    config_param :load_records_limit,     :integer, :default => 10000,  :secret => true
-    config_param :load_record_interval,   :integer, :default => 1,      :secret => true #=> sec
-    config_param :load_shard_interval,    :integer, :default => 1,      :secret => true #=> sec
-    config_param :format,                 :string,  :default => 'none', :secret => true
-    config_param :describe_shard,         :bool,    :default => false,  :secret => true
-    config_param :describe_use_shards,    :array,   :default => [],     :secret => true
-    config_param :retries_on_get_records, :integer, :default => 3
-    config_param :fallback_shard_iterator_type, :string,  :default => 'TRIM_HORIZON', :secret => true
-    
-    def configure(conf)
-      super
+      Fluent::Plugin.register_input("kinesis", self)
       
-      unless @state_dir_path
-        $log.warn "'state_dir_path PATH' parameter is not set to a 'kinesis' source."
-        $log.warn "this parameter is highly recommended to save the last rows to resume tailing."
-      end
-      @parser = Fluent::Plugin.new_parser(conf['format'])
-      @parser.configure(conf)
+      config_param :tag,                    :string, :default => nil
+      config_param :state_dir_path,         :string, :default => nil
 
-      @map = {} #=> Thread Object management
-      @thread_stop_map = {} #=> Thread stop flag management
-      @dead_thread=[] #=> Dead Thread management
-    end
-    
-    def start
-      super
-      @stop_flag = false
-      load_client
-      Thread.new(&method(:supervisor_thread))
-    end
-    
-    def shutdown
-      @stop_flag = true
-    end
-
-    def load_client
-          
-      options = {}
+      config_param :aws_key_id,             :string, :default => nil, :secret => true
+      config_param :aws_sec_key,            :string, :default => nil, :secret => true
+      config_param :region,                 :string, :default => nil
+      config_param :profile,                :string, :default => nil
+      config_param :credentials_path,       :string, :default => nil
+      config_param :stream_name,            :string
       
-      if @region
-        options[:region] = @region
-      end
-    
-      if @aws_key_id && @aws_sec_key
-        options.update(
-          access_key_id: @aws_key_id,
-          secret_access_key: @aws_sec_key,
-        )
-      elsif @profile
-        credentials_opts = {:profile_name => @profile}
-        credentials_opts[:path] = @credentials_path if @credentials_path
-        credentials = Aws::SharedCredentials.new(credentials_opts)
-        options[:credentials] = credentials
+      config_param :use_base64,             :bool,    :default => false,  :secret => true
+      config_param :use_gunzip,             :bool,    :default => false,  :secret => true
+      config_param :load_records_limit,     :integer, :default => 10000,  :secret => true
+      config_param :load_record_interval,   :integer, :default => 1,      :secret => true #=> sec
+      config_param :load_shard_interval,    :integer, :default => 1,      :secret => true #=> sec
+      config_param :format,                 :string,  :default => 'none', :secret => true
+      config_param :describe_shard,         :bool,    :default => false,  :secret => true
+      config_param :describe_use_shards,    :array,   :default => [],     :secret => true
+      config_param :retries_on_get_records, :integer, :default => 3
+      config_param :fallback_shard_iterator_type, :string,  :default => 'TRIM_HORIZON', :secret => true
+      
+      def configure(conf)
+        super
+        
+        unless @state_dir_path
+          $log.warn "'state_dir_path PATH' parameter is not set to a 'kinesis' source."
+          $log.warn "this parameter is highly recommended to save the last rows to resume tailing."
+        end
+        @parser = Fluent::Plugin.new_parser(conf['format'])
+        @parser.configure(conf)
+
+        @map = {} #=> Thread Object management
+        @thread_stop_map = {} #=> Thread stop flag management
+        @dead_thread=[] #=> Dead Thread management
       end
       
-      @client = Aws::Kinesis::Client.new(options)
+      def start
+        super
+        @stop_flag = false
+        load_client
+        Thread.new(&method(:supervisor_thread))
+      end
+      
+      def shutdown
+        @stop_flag = true
+      end
+
+      def load_client
+            
+        options = {}
+        
+        if @region
+          options[:region] = @region
+        end
+      
+        if @aws_key_id && @aws_sec_key
+          options.update(
+            access_key_id: @aws_key_id,
+            secret_access_key: @aws_sec_key,
+          )
+        elsif @profile
+          credentials_opts = {:profile_name => @profile}
+          credentials_opts[:path] = @credentials_path if @credentials_path
+          credentials = Aws::SharedCredentials.new(credentials_opts)
+          options[:credentials] = credentials
+        end
+        
+        @client = Aws::Kinesis::Client.new(options)
+      end
     end
   end
 end
