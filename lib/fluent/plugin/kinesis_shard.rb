@@ -81,17 +81,39 @@ module KinesisShard
         d = Zlib::GzipReader.new(StringIO.new(d)).read
       end
 
-      time, record = @parser.parse(d)
+      if @parser
+        time, record = @parser.parse(d)
+      else
+        record = @json_handler.load(d)
+        if record.key?("timestamp")
+          time = v["timestamp"]
+        else
+          time = Time.now.to_i
+        end
+      end
       if record.nil? || record.empty?
         $log.warn "format error :=> record #{time} : #{d}"
       else
-        me.add(time, record)
+        if record.key?("logEvents")
+          record["logEvents"].each do |v|
+            v["logGroup"] = record["logGroup"]
+            v["logStream"] = record["logStream"]
+            v["owner"] = record["owner"]
+            v.delete("id")
+            v.delete("timestamp")
+            me.add(time, v)
+          end
+        else
+          me.add(time, record)
+        end
       end
     end
     
     unless me.empty?
       router.emit_stream(@tag, me)
     end
+  rescue => e
+    $log.error "emit_records : #{e.message}"
   end
 
   def sequence(records_info)

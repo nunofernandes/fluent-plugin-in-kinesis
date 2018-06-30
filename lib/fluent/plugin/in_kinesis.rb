@@ -24,7 +24,6 @@ require 'fluent/process'
 require 'fluent/plugin/thread_supervisor'
 require 'fluent/plugin/kinesis_shard'
 
-
 module Fluent
   module Plugin
     class KinesisInputFilter < Fluent::Plugin::Input
@@ -60,6 +59,7 @@ module Fluent
       config_param :aws_use_sts,            :bool,    default: false
       config_param :aws_sts_role_arn,       :string,  default: nil
       config_param :aws_sts_session_name,   :string,  default: 'fluentd'
+      config_param :json_handler,           :enum,    list: [:yajl, :json], :default => :json
 
       def configure(conf)
         super
@@ -68,8 +68,10 @@ module Fluent
           $log.warn "'state_dir_path PATH' parameter is not set to a 'kinesis' source."
           $log.warn "this parameter is highly recommended to save the last rows to resume tailing."
         end
-        @parser = Fluent::Plugin.new_parser(conf['format'])
-        @parser.configure(conf)
+        if conf['format'] != nil
+          @parser = Fluent::Plugin.new_parser(conf['format'])
+          @parser.configure(conf)
+        end
 
         @map = {} #=> Thread Object management
         @thread_stop_map = {} #=> Thread stop flag management
@@ -80,6 +82,12 @@ module Fluent
         super
         @stop_flag = false
         load_client
+        @json_handler = case @json_handler
+                      when :yajl
+                        Yajl
+                      when :json
+                        JSON
+                      end
         Thread.new(&method(:supervisor_thread))
       end
       
