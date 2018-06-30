@@ -95,68 +95,23 @@ Or install it yourself as:
 
 
 ##Configuration examples
-    <source>
-    
-      type kinesis
-      
-      stream_name YOUR_STREAM_NAME
-      
-      aws_key_id YOUR_AWS_ACCESS_KEY
-      
-      aws_sec_key YOUR_SECRET_KEY
-    
-      region ap-northeast-1
-      
-      load_records_limit 1000
-      
-      load_shard_interval 10
-      
-      load_record_interval 2
-      
-      tag target.log
-      
-      state_dir_path /tmp/kinesis/save_file
-      
-      use_base64 true
-      
-      format json
-      
-    </source>
-    
-##Using describe_shard
-When describe_shard is specified, target shards are manually set using describe_use_shards parameter.
+```
+<source>
+  @type kinesis
+  region eu-west-3
+  tag source.cloudwatch_logs.tst.systems
+  stream_name logs-systems-stream
 
-    <source>
-    
-      type kinesis
-      
-      stream_name YOUR_STREAM_NAME
-      
-      aws_key_id YOUR_AWS_ACCESS_KEY
-      
-      aws_sec_key YOUR_SECRET_KEY
-    
-      region ap-northeast-1
-      
-      load_records_limit 1000
-      
-      load_shard_interval 10
-      
-      load_record_interval 2
-      
-      tag target.log
-      
-      state_dir_path /tmp/kinesis/save_file
-      
-      use_base64 true
-      
-      format json
-      
-      describe_shard true
-      
-      describe_use_shards  ["shardId-000000000000", "shardId-000000000002"]
-      
-    </source>
+  load_records_limit 1000
+  load_shard_interval 10
+  load_record_interval 2
+  state_dir_path /tmp/kinesis_save_file
+  use_gunzip true
+
+  aws_use_sts true
+  aws_sts_role_arn arn:aws:iam::XXXXXXXXXX:role/efk_role_tst
+</source>
+```
     
 ## Related Resources
 
