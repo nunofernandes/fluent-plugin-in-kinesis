@@ -57,6 +57,10 @@ module Fluent
       config_param :retries_on_get_records, :integer, :default => 3
       config_param :fallback_shard_iterator_type, :string,  :default => 'TRIM_HORIZON', :secret => true
       
+      config_param :aws_use_sts,            :bool,    default: false
+      config_param :aws_sts_role_arn,       :string,  default: nil
+      config_param :aws_sts_session_name,   :string,  default: 'fluentd'
+
       def configure(conf)
         super
         
@@ -90,8 +94,14 @@ module Fluent
         if @region
           options[:region] = @region
         end
-      
-        if @aws_key_id && @aws_sec_key
+
+        if @aws_use_sts
+        Aws.config[:region] = options[:region]
+        options[:credentials] = Aws::AssumeRoleCredentials.new(
+          role_arn: @aws_sts_role_arn,
+          role_session_name: @aws_sts_session_name
+        )
+        elsif @aws_key_id && @aws_sec_key
           options.update(
             access_key_id: @aws_key_id,
             secret_access_key: @aws_sec_key,
